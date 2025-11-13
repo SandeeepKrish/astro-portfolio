@@ -6,30 +6,7 @@ import ProjectCard from '../components/ProjectCard.astro'
 
 import { contentfulClient } from '../lib/contentful'
 
-// optional: keep WORK if you want to reuse title/description
-import { WORK } from '../lib/constants'
-
-interface Project {
-  contentTypeId: 'Projects'
-  fields: {
-    name: string
-    description?: string
-    img?: any
-    website?: string
-    repo?: string
-  }
-}
-
-// Contentful fetch (will work if you have entries)
-let entries = { items: [] }
-try {
-  entries = await contentfulClient.getEntries<Project>({})
-} catch (err) {
-  // fail quietly, we'll use sample data
-  console.warn('Contentful fetch failed, using sample projects', err)
-}
-
-// SAMPLE fallback data — replace or expand as needed
+// SAMPLE fallback data — replace as needed
 const SAMPLE_PROJECTS = [
   {
     id: 'sample-1',
@@ -55,9 +32,43 @@ const SAMPLE_PROJECTS = [
     website: 'https://example-portfolio.vercel.app',
     repo: 'https://github.com/your-username/astro-portfolio-clone',
   },
+  // add more to test multiple rows
+  {
+    id: 'sample-4',
+    name: 'Todo App (Demo)',
+    description: 'Fast todo app with local persistence and animations.',
+    img: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=1400&q=80&auto=format&fit=crop',
+    website: 'https://example-todo.vercel.app',
+    repo: 'https://github.com/your-username/todo-demo',
+  },
+  {
+    id: 'sample-5',
+    name: 'Chat UI Demo',
+    description: 'Real-time chat interface using websockets.',
+    img: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=1400&q=80&auto=format&fit=crop',
+    website: 'https://example-chat.vercel.app',
+    repo: 'https://github.com/your-username/chat-ui',
+  },
+  {
+    id: 'sample-6',
+    name: 'Analytics Dashboard',
+    description: 'Dashboard with charts and filters using recharts.',
+    img: 'https://images.unsplash.com/photo-1526378722353-0f2e8e6b0b30?w=1400&q=80&auto=format&fit=crop',
+    website: 'https://example-dashboard.vercel.app',
+    repo: 'https://github.com/your-username/analytics-dashboard',
+  },
 ]
 
-// Helper to safely read Contentful image URL (prefix with https if needed)
+// Try contentful - fallback on samples if no entries or error
+let entries = { items: [] }
+try {
+  const res = await contentfulClient.getEntries({})
+  if (res && res.items && res.items.length) entries = res
+} catch (err) {
+  // ignore, use sample data
+  console.warn('Contentful fetch failed, using sample projects')
+}
+
 const getImageUrl = (asset) => {
   if (!asset) return ''
   const url = (asset?.fields?.file?.url ?? '') as string
@@ -67,29 +78,28 @@ const getImageUrl = (asset) => {
   return `https:${url}`
 }
 
-// Build final list: prefer contentful entries if present, otherwise samples
 const projects = (entries?.items && entries.items.length > 0)
   ? entries.items.map((entry: any) => ({
       id: entry?.sys?.id,
       name: entry?.fields?.name ?? 'Untitled Project',
       description: entry?.fields?.description ?? '',
       img: getImageUrl(entry?.fields?.img),
-      website: entry?.fields?.website ?? entry?.fields?.live ?? '',
+      website: entry?.fields?.website ?? '',
       repo: entry?.fields?.repo ?? entry?.fields?.repositorio ?? '',
     }))
   : SAMPLE_PROJECTS
 ---
-
 <BaseLayout title="Portfolio" description="Projects and some clones that I did">
   <main class="flex min-h-[80vh] flex-auto flex-col" transition:animate="slide">
     <TopLayout>
       <h2 class="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
-        Projects 
+        Projects and clone's
       </h2>
     </TopLayout>
 
     <BottomLayout size="xl">
-      <div class="flex w-full flex-wrap justify-center gap-6">
+      <!-- Grid: 1 col mobile, 2 cols small, 3 cols md+ -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {projects.map((p) => (
           <ProjectCard
             key={p.id}
@@ -98,7 +108,7 @@ const projects = (entries?.items && entries.items.length > 0)
             subheading={p.description}
             imagePath={p.img || 'https://via.placeholder.com/800x450?text=No+Image'}
             altText={p.name}
-            class="w-full sm:w-2/5"
+            class="w-full"
             repo={p.repo}
             live={p.website}
           />
