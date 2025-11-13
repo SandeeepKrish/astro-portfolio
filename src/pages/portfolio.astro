@@ -1,54 +1,108 @@
 ---
-import { WORK } from '../lib/constants'
 import BaseLayout from '../layouts/BaseLayout.astro'
 import TopLayout from '../layouts/TopLayout.astro'
 import BottomLayout from '../layouts/BottomLayout.astro'
 import ProjectCard from '../components/ProjectCard.astro'
 
 import { contentfulClient } from '../lib/contentful'
-import { documentToHtmlString } from '@contentful/rich-text-html-renderer'
-import type { EntryFieldTypes } from 'contentful'
+
+// optional: keep WORK if you want to reuse title/description
+import { WORK } from '../lib/constants'
 
 interface Project {
   contentTypeId: 'Projects'
   fields: {
-    name: EntryFieldTypes.Text
-    img: EntryFieldTypes.AssetLink
-    website: EntryFieldTypes.EntryResourceLink<any>
-    repositorio: EntryFieldTypes.EntryResourceLink<any>
+    name: string
+    description?: string
+    img?: any
+    website?: string
+    repo?: string
   }
 }
 
-const entries = await contentfulClient.getEntries<Project>({})
+// Contentful fetch (will work if you have entries)
+let entries = { items: [] }
+try {
+  entries = await contentfulClient.getEntries<Project>({})
+} catch (err) {
+  // fail quietly, we'll use sample data
+  console.warn('Contentful fetch failed, using sample projects', err)
+}
+
+// SAMPLE fallback data — replace or expand as needed
+const SAMPLE_PROJECTS = [
+  {
+    id: 'sample-1',
+    name: 'SkincareConnect (Demo)',
+    description: 'AI-driven skincare recommender with responsive React/Tailwind UI.',
+    img: 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?w=1400&q=80&auto=format&fit=crop',
+    website: 'https://example-live-skincare.vercel.app',
+    repo: 'https://github.com/your-username/skincareconnect',
+  },
+  {
+    id: 'sample-2',
+    name: 'Hospital Management System (Demo)',
+    description: 'Digitalized hospital workflows & AI-assisted intern tools.',
+    img: 'https://images.unsplash.com/photo-1587502536263-3f77a9b1d3f1?w=1400&q=80&auto=format&fit=crop',
+    website: 'https://example-hms.vercel.app',
+    repo: 'https://github.com/your-username/hospital-management-demo',
+  },
+  {
+    id: 'sample-3',
+    name: 'Portfolio UI Clone',
+    description: 'Modern portfolio built with Astro + Tailwind + shadcn-ui.',
+    img: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=1400&q=80&auto=format&fit=crop',
+    website: 'https://example-portfolio.vercel.app',
+    repo: 'https://github.com/your-username/astro-portfolio-clone',
+  },
+]
+
+// Helper to safely read Contentful image URL (prefix with https if needed)
+const getImageUrl = (asset) => {
+  if (!asset) return ''
+  const url = (asset?.fields?.file?.url ?? '') as string
+  if (!url) return ''
+  if (url.startsWith('//')) return `https:${url}`
+  if (url.startsWith('http')) return url
+  return `https:${url}`
+}
+
+// Build final list: prefer contentful entries if present, otherwise samples
+const projects = (entries?.items && entries.items.length > 0)
+  ? entries.items.map((entry: any) => ({
+      id: entry?.sys?.id,
+      name: entry?.fields?.name ?? 'Untitled Project',
+      description: entry?.fields?.description ?? '',
+      img: getImageUrl(entry?.fields?.img),
+      website: entry?.fields?.website ?? entry?.fields?.live ?? '',
+      repo: entry?.fields?.repo ?? entry?.fields?.repositorio ?? '',
+    }))
+  : SAMPLE_PROJECTS
 ---
 
-<BaseLayout
-  title="Portfolio"
-  description="Projects and some clone's that I did"
->
+<BaseLayout title="Portfolio" description="Projects and some clones that I did">
   <main class="flex min-h-[80vh] flex-auto flex-col" transition:animate="slide">
     <TopLayout>
-      <h2
-        class="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0"
-      >
+      <h2 class="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
         Projects and clone's
       </h2>
     </TopLayout>
+
     <BottomLayout size="xl">
-      <div class="flex w-full flex-wrap justify-center gap-2">
-        {
-          entries.items.map((entry: any) => (
-            <ProjectCard
-              key={entry?.sys?.id}
-              href={entry?.fields?.website}
-              heading={entry?.fields?.name}
-              subheading={entry?.fields?.description}
-              imagePath={entry?.fields?.img?.fields?.file.url}
-              altText={entry?.fields?.img?.fields.title}
-              class="w-full sm:w-2/5"
-            />
-          ))
-        }
+      <div class="flex w-full flex-wrap justify-center gap-6">
+        {projects.map((p) => (
+          <ProjectCard
+            key={p.id}
+            href={p.website || undefined}
+            heading={p.name}
+            subheading={p.description}
+            imagePath={p.img || 'https://via.placeholder.com/800x450?text=No+Image'}
+            altText={p.name}
+            class="w-full sm:w-2/5"
+            repo={p.repo}
+            live={p.website}
+          />
+        ))}
       </div>
     </BottomLayout>
   </main>
