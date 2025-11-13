@@ -6,7 +6,7 @@ import ProjectCard from '../components/ProjectCard.astro'
 
 import { contentfulClient } from '../lib/contentful'
 
-// SAMPLE fallback data — replace as needed
+// SAMPLE fallback data
 const SAMPLE_PROJECTS = [
   {
     id: 'sample-1',
@@ -32,7 +32,6 @@ const SAMPLE_PROJECTS = [
     website: 'https://example-portfolio.vercel.app',
     repo: 'https://github.com/your-username/astro-portfolio-clone',
   },
-  // add more to test multiple rows
   {
     id: 'sample-4',
     name: 'Todo App (Demo)',
@@ -59,13 +58,12 @@ const SAMPLE_PROJECTS = [
   },
 ]
 
-// Try contentful - fallback on samples if no entries or error
+// attempt to fetch contentful entries, fallback on SAMPLE_PROJECTS
 let entries = { items: [] }
 try {
   const res = await contentfulClient.getEntries({})
   if (res && res.items && res.items.length) entries = res
 } catch (err) {
-  // ignore, use sample data
   console.warn('Contentful fetch failed, using sample projects')
 }
 
@@ -92,27 +90,32 @@ const projects = (entries?.items && entries.items.length > 0)
 <BaseLayout title="Portfolio" description="Projects and some clones that I did">
   <main class="flex min-h-[80vh] flex-auto flex-col" transition:animate="slide">
     <TopLayout>
-      <h2 class="scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
-        Projects and clone's
-      </h2>
+      <!-- Center the heading and constrain width -->
+      <div class="max-w-6xl mx-auto w-full px-4">
+        <h2 class="text-center scroll-m-20 border-b pb-2 text-3xl font-semibold tracking-tight first:mt-0">
+          Projects and clone's
+        </h2>
+      </div>
     </TopLayout>
 
     <BottomLayout size="xl">
-      <!-- Grid: 1 col mobile, 2 cols small, 3 cols md+ -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {projects.map((p) => (
-          <ProjectCard
-            key={p.id}
-            href={p.website || undefined}
-            heading={p.name}
-            subheading={p.description}
-            imagePath={p.img || 'https://via.placeholder.com/800x450?text=No+Image'}
-            altText={p.name}
-            class="w-full"
-            repo={p.repo}
-            live={p.website}
-          />
-        ))}
+      <div class="max-w-6xl mx-auto w-full px-4">
+        <!-- Grid: 1 col mobile, 2 cols from small screens up -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {projects.map((p) => (
+            <ProjectCard
+              key={p.id}
+              href={p.website || undefined}
+              heading={p.name}
+              subheading={p.description}
+              imagePath={p.img || 'https://via.placeholder.com/800x450?text=No+Image'}
+              altText={p.name}
+              class="w-full"
+              repo={p.repo}
+              live={p.website}
+            />
+          ))}
+        </div>
       </div>
     </BottomLayout>
   </main>
